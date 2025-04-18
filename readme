@@ -1,0 +1,103 @@
+# Academic Article PDF Data Extractor using Gemini API
+
+This Python project automates the process of extracting structured information from academic PDF articles using Google's Gemini language model API. It batch processes PDF files from a specified folder, extracts data based on customizable prompts, saves the aggregated data into a single Excel file, renames the original PDF files based on extracted Year and Title, and moves them to a designated "done" folder.
+
+## Features
+
+*   **Batch Processing:** Processes all PDF files found within a specified source folder.
+*   **AI-Powered Extraction:** Leverages the Google Gemini API to understand and extract information from PDF text based on natural language prompts.
+*   **Customizable Prompts:** Easily modify the extraction prompts in the script to target different data fields or refine extraction criteria.
+*   **Structured Output:** Saves the extracted data for all processed articles into a single, well-organized Excel file (`.xlsx`).
+*   **PDF Renaming:** Automatically renames processed PDF files using the pattern: `Year - Title.pdf` (based on extracted data).
+*   **File Organization:** Moves the renamed, successfully processed PDFs to a separate destination folder, keeping the source folder clean.
+*   **Error Handling:** Includes basic error handling for file operations, API calls, and PDF reading. Failed PDFs are logged and not moved.
+*   **Helper Script:** Uses a `google_setup.py` script to manage Gemini API client initialization and API key handling via environment variables.
+
+## Prerequisites
+
+1.  **Python:** Python 3.7 or higher is recommended.
+2.  **Google Gemini API Key:** You need an API key from Google Cloud AI Platform.
+    *   Enable the Gemini API in your Google Cloud project.
+    *   Create an API key. See [Google AI Documentation](https://ai.google.dev/docs).
+3.  **Python Libraries:** Install the required libraries:
+    ```bash
+    pip install google-generativeai python-dotenv pandas openpyxl PyPDF2
+    ```
+    *   `google-generativeai`: Google's official library for the Gemini API.
+    *   `python-dotenv`: To load the API key from an environment file.
+    *   `pandas`: For creating and managing the data structure (DataFrame).
+    *   `openpyxl`: Required by pandas to write Excel `.xlsx` files.
+    *   `PyPDF2`: For extracting text content from PDF files.
+
+## Setup
+
+1.  **Clone or Download:** Obtain the project files (the main script/notebook, `google_setup.py`).
+2.  **API Key:** Create a file named `.env` in the same directory as `google_setup.py`. Add your API key to this file:
+    ```dotenv
+    # .env file content
+    API_KEY=YOUR_ACTUAL_GEMINI_API_KEY
+    ```
+    Replace `YOUR_ACTUAL_GEMINI_API_KEY` with your real key. **Do not commit the `.env` file to version control (add it to `.gitignore`).**
+3.  **Helper Script:** Ensure the `google_setup.py` file is present in the same directory as your main script or notebook. This script handles initializing the Gemini client using the API key from the `.env` file.
+4.  **Create Folders:**
+    *   Create a folder to hold the PDF articles you want to process (e.g., `Articles/`).
+    *   The script will automatically create the destination folder for processed files (e.g., `Articles_done/`) if it doesn't exist.
+
+## Configuration
+
+Before running, configure the following variables within the main Python script or Jupyter Notebook:
+
+*   **`PDF_FOLDER_PATH`**: Set this to the path of the folder containing the PDF files you want to process (e.g., `"Articles/"`).
+*   **`DESTINATION_FOLDER_PATH`**: Set this to the desired path where successfully processed and renamed PDFs should be moved (e.g., `"Articles_done/"`).
+*   **`OUTPUT_EXCEL_FILENAME`**: The name for the output Excel file containing the extracted data (e.g., `"Extracted_Article_Data.xlsx"`).
+*   **`MODEL_NAME`**: Specify the Gemini model you want to use (e.g., `"gemini-1.5-flash-latest"`). Check [Google AI Models](https://ai.google.dev/models/gemini) for available models and consider cost/performance trade-offs.
+*   **`(Optional) OVERARCHING_PROMPT`**: Modify the system-level instructions given to the model for overall behavior (e.g., response style, language).
+*   **`(Optional) prompts`**: Edit the dictionary keys (output column names) and values (specific instructions for the Gemini model) to customize the data extraction fields.
+
+## Usage
+
+1.  **Place PDFs:** Copy all the PDF articles you want to process into the folder specified by `PDF_FOLDER_PATH`.
+2.  **Configure:** Ensure all configuration variables in the script/notebook are set correctly.
+3.  **Run Script:** Execute the main Python script or run the cells in the Jupyter Notebook.
+    ```bash
+    python your_main_script_name.py
+    ```
+    or run the notebook cells sequentially.
+4.  **Monitor Output:** Check the console output for progress updates, successful processing messages, and any error reports during PDF reading, API calls, or file operations.
+
+## Output
+
+*   **Excel File:** An Excel file (named according to `OUTPUT_EXCEL_FILENAME`) will be created in the same directory where the script is run. It will contain one row for each processed PDF (including those that failed processing but were read), with columns corresponding to the keys in the `prompts` dictionary, plus `original_filename` and potentially a `status` column indicating errors.
+*   **Renamed & Moved PDFs:** Successfully processed PDF files will be renamed to `Year - Title.pdf` and moved from the `PDF_FOLDER_PATH` to the `DESTINATION_FOLDER_PATH`.
+*   **Untouched PDFs:** PDFs that encounter errors during text extraction or critical processing steps will remain in the original `PDF_FOLDER_PATH`. Their corresponding rows in the Excel file might contain error messages.
+
+## Dependencies
+
+*   google-generativeai
+*   python-dotenv
+*   pandas
+*   openpyxl
+*   PyPDF2
+
+## Error Handling & Troubleshooting
+
+*   **`ModuleNotFoundError`:** Usually means a required library is not installed. Run the `pip install ...` command again. If using Jupyter, restart the kernel after installation.
+*   **API Errors:**
+    *   `PermissionDenied` or `API Key not valid`: Check if the `.env` file is correctly formatted and contains the valid API key. Ensure the API is enabled in your Google Cloud project.
+    *   `ResourceExhausted`: You might be hitting API rate limits (especially on the free tier). Consider adding `time.sleep(1)` or `time.sleep(2)` inside the loop in the main script between API calls.
+    *   `Blocked content`: Gemini might refuse to process content due to safety filters. Check the console output for details.
+*   **PDF Reading Errors:**
+    *   `FileNotFoundError`: Check if `PDF_FOLDER_PATH` is correct.
+    *   `PdfReadError` or errors during `extract_text()`: The PDF might be corrupted, password-protected, or primarily contain scanned images rather than selectable text. `PyPDF2` has limitations with scanned/complex PDFs.
+*   **File Moving/Renaming Errors:**
+    *   `PermissionError`: The script might not have permission to write to the destination folder or modify the source files.
+    *   `FileNotFoundError`: Can happen if the file was unexpectedly moved or deleted between steps.
+    *   `OSError` (e.g., file in use): Ensure the PDF is not open in another application. An error might also occur if a file with the exact target name already exists in the destination folder.
+*   **Incorrect Data Extraction:** The accuracy depends on the Gemini model, the clarity of the prompts, and the quality/structure of the PDF text. Refine the `prompts` dictionary or the `OVERARCHING_PROMPT` for better results. Check the console output for any warnings from the extraction function.
+
+## Important Notes
+
+*   **API Costs:** Using the Google Gemini API incurs costs based on the amount of input and output tokens processed, especially when using the paid tier. Monitor your usage and billing in the Google Cloud Console. Choose models like `gemini-1.5-flash-latest` for potentially lower costs compared to Pro models.
+*   **PDF Quality:** The success of text extraction heavily depends on the PDF files being text-based (not just images of text) and reasonably well-formatted. Scanned documents will likely yield poor or no text.
+*   **Backup:** **It is highly recommended to back up your original PDF files before running this script**, especially the first few times, as it modifies and moves files.
+*   **Rate Limits:** Be mindful of API rate limits, particularly if processing a large number of files quickly. Add delays (`time.sleep()`) if necessary.
